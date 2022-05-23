@@ -5,6 +5,11 @@ src/
 
 .gitignore
 .np-config.js
+
 jest.config.ts
+jest.esm.config.ts
+
+babel.config.js
+
 tsconfig.json
 tsconfig.lib.json

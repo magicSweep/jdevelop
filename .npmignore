@@ -1,0 +1,10 @@
+node_modules
+.env
+
+src/
+
+.gitignore
+.np-config.js
+jest.config.ts
+tsconfig.json
+tsconfig.lib.json

@@ -1,0 +1,53 @@
+{
+  "name": "jdevelop",
+  "version": "0.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "node ./node_modules/.bin/jest",
+    "tsc": "node ./node_modules/.bin/tsc",
+    "jest:watchAll": "jest --watch-all",
+    "jest:esm:watchAll": "jest --config=jest.esm.config.ts --watch-all",
+    "release": "np --branch=main --yolo --no-yarn --no-2fa",
+    "build:lib": "cross-env NODE_ENV=\"production\" rm -rf dist && tsc --project tsconfig.lib.json"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bin": {
+    "jdevelop": "dist/cli.js"
+  },
+  "browserslist": {
+    "production": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "peerDependencies": {
+    "fmagic": "^1.1.4",
+    "minimist": "^1.2.6"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.17.9",
+    "@babel/preset-env": "^7.16.11",
+    "@types/jest": "^27.4.1",
+    "@types/minimist": "^1.2.2",
+    "@types/node": "^16.*.*",
+    "babel-jest": "^27.5.1",
+    "copyfiles": "^2.4.1",
+    "cross-env": "^7.0.3",
+    "fmagic": "^1.1.4",
+    "jest": "^27.5.1",
+    "ts-jest": "^27.1.4",
+    "ts-node": "^10.7.0",
+    "typescript": "^4.6.3",
+    "waait": "^1.0.5",
+    "minimist": "^1.2.6"
+  }
+}

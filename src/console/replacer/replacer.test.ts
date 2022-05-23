@@ -3,7 +3,7 @@ import { ReplacerConfig, replacer_, withLoadConfig_ } from ".";
 
 const configContent = `
 import { FirestoreFieldsToEdit, EditPhotoWorkerProps } from "./../types";
-import { add, edit } from "../api/worker";
+import { add, edit } from "../api/worker.fake";
 import { WorkerRequest } from "lizzygram-common-data/dist/types";
 
 export const addPhotoFormTitle = "Добавить новое фото";
@@ -59,8 +59,8 @@ describe("replacer_", () => {
     pathToFile: "/src/path-to-file.ts",
     // identify in log messages
     identifier: "TEST REPLACER",
-    replaceable: "api/worker",
-    replacement: "api/worker.fake",
+    replaceable: "api/worker.fake",
+    replacement: "api/worker",
   };
 
   const replacer = replacer_(existsSync, readFile as any, writeFile as any);

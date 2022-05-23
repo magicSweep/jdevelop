@@ -101,7 +101,7 @@ export const replacer_ = (
             (data: ReplacerData) =>
               data.replaceableInFile === true &&
               data.replacementInFile === true,
-            (data: ReplacerData) => Done.of(data),
+            (data: ReplacerData) => NI_Next.of(data),
           ],
 
           [

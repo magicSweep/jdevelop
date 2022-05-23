@@ -1,8 +1,8 @@
 //import parse from "minimist";
 import parse from "minimist";
 import { join } from "path";
-import createReactFunc from "./console/createReactFunc";
-import { withLoadConfig as replacer } from "./console/replacer";
+import createReactFunc from "./../console/createReactFunc";
+import { withLoadConfig as replacer } from "./../console/replacer";
 
 const main = () => {
   const args = parse(process.argv.slice(2));

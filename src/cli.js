@@ -1,2 +1,4 @@
 //#!/usr/bin/env node
-require("./dist/cli/index.js");
+const [, , ...args] = process.argv;
+
+console.log("Hello World ${args}");

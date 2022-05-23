@@ -13,6 +13,16 @@
 - $ npm run jdevelop --cmd=replacer --config=config/replacer.config.js - config - path to config file - related to root dir rootDir/config/replacer.config.js
 
 ```javascript
+// package.json example
+
+{
+  "scripts": {
+    "fake-imports": "jdevelop --cmd=replacer --config=src/config/replacer/fake-imports.config.js",
+  },
+}
+```
+
+```javascript
 // replacer.config.js example
 
 exports.default = [

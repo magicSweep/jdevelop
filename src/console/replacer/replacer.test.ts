@@ -1,5 +1,5 @@
 import { writeFile } from "fs/promises";
-import { ReplacerConfig, replacer_, withLoadConfig_ } from ".";
+import { ReplacerConfig, replacer_, withLoadConfig_, getFullLine } from ".";
 
 const configContent = `
 import { FirestoreFieldsToEdit, EditPhotoWorkerProps } from "./../types";
@@ -16,11 +16,10 @@ export const searchPhotoFormTitle = "Поиск фото";
 
 export const lizzyBirthday = new Date("2018-07-08");
 
-// NUMBER OF PHOTOS PER QUERY
-
-export const numberOfPhotosPerQuery = 5;
-
 // WALL OF PHOTOS | USE OBSERVABLE PHOTOS
+
+// NUMBER OF PHOTOS PER QUERY
+export const numberOfPhotosPerQuery = 9;
 
 //export const rootDivId = "wall_of_photos";
 //export const idPrefix = "#OBSERVER_";
@@ -45,6 +44,17 @@ plugins: [
   "gatsby-plugin-webpack-bundle-analyser-v2",
 ],
 `;
+
+describe("getFullLine", () => {
+  test("", () => {
+    const res = getFullLine("lizzyBirthday", configContent);
+
+    expect(res.includes("2018-07-08")).toEqual(true);
+    /* expect(res.includes("photoCardWidth")).toEqual(
+      "export const numberOfPhotosPerQuery = calcPhotosLimitPerQuery(  photoCardWidth,  photoCardHeight);"
+    ); */
+  });
+});
 
 describe("replacer_", () => {
   const existsSync = jest.fn(() => true);
@@ -79,6 +89,23 @@ describe("replacer_", () => {
       ...config,
       replaceable: '"gatsby-plugin-webpack-bundle-analyser-v2"',
       replacement: '//"gatsby-plugin-webpack-bundle-analyser-v2"',
+    });
+
+    expect(existsSync).toHaveBeenCalledTimes(1);
+    expect(readFile).toHaveBeenCalledTimes(1);
+    expect(writeFile).toHaveBeenCalledTimes(1);
+    //expect(writeFile).toHaveBeenNthCalledWith(1, "hello");
+  });
+
+  test("", async () => {
+    await replacer({
+      ...config,
+      doesReplaceFullLine: true,
+      replaceable: "numberOfPhotosPerQuery",
+      replacement: `export const numberOfPhotosPerQuery = calcPhotosLimitPerQuery(
+        photoCardWidth,
+        photoCardHeight
+      );`,
     });
 
     expect(existsSync).toHaveBeenCalledTimes(1);

@@ -21,8 +21,9 @@ import { join } from "path";
 type ReplacerData = ReplacerConfig & {
   content: string;
   newContent: string;
-  replaceableInFile: boolean;
-  replacementInFile: boolean;
+  fReplaceable: string;
+  isReplaceableInFile: boolean;
+  isReplacementInFile: boolean;
   error: any;
 };
 
@@ -31,8 +32,32 @@ export type ReplacerConfig = {
   pathToFile: string;
   // identify in log messages
   identifier: string;
+  doesReplaceFullLine?: boolean;
   replaceable: string;
+  //
   replacement: string;
+};
+
+export const getFullLine = (searchTerm: string, content: string) => {
+  const startSymbol = "\n";
+  const lastSymbol = ";";
+
+  const searchTermIndex = content.indexOf(searchTerm);
+  let startIndex = content.lastIndexOf(startSymbol, searchTermIndex) + 1;
+  let endIndex = content.indexOf(lastSymbol, searchTermIndex) + 1;
+
+  //console.log("BOOM1-----------", data.content[endIndex].charCodeAt(0));
+
+  /* startIndex =
+    data.doesIncludeFirstSymbol === false ? startIndex + 1 : startIndex;
+  endIndex =
+    data.doesIncludeLastSymbol === true ? endIndex + 1 : endIndex; */
+
+  //console.log("BOOM2-----------", data.content[endIndex].charCodeAt(0));
+
+  const fullLine = content.substring(startIndex, endIndex);
+
+  return fullLine;
 };
 
 // numberOfPhotosPerQuery from number to calcPhotosLimitPerQuery
@@ -65,9 +90,15 @@ export const replacer_ = (
     ),
 
     // Get full string with
-    /* then(
+    then(
       map((data: ReplacerData) => {
-        const chunkIndex = data.content.indexOf(data.strPartToIdentify);
+        if (data.doesReplaceFullLine === true) {
+          data.fReplaceable = getFullLine(data.replaceable, data.content);
+        } else {
+          data.fReplaceable = data.replaceable;
+        }
+
+        /*   const chunkIndex = data.content.indexOf(data.strPartToIdentify);
         let startIndex = data.content.lastIndexOf(data.strStart, chunkIndex);
         let endIndex = data.content.indexOf(data.strEnd, chunkIndex);
 
@@ -80,17 +111,17 @@ export const replacer_ = (
 
         //console.log("BOOM2-----------", data.content[endIndex].charCodeAt(0));
 
-        data.fullSearchedString = data.content.substring(startIndex, endIndex);
+        data.fullSearchedString = data.content.substring(startIndex, endIndex); */
 
         return data;
       })
-    ), */
+    ),
 
     then(
       map((data: ReplacerData) => ({
         ...data,
-        replaceableInFile: data.content.indexOf(data.replaceable) !== -1,
-        replacementInFile: data.content.indexOf(data.replacement) !== -1,
+        isReplaceableInFile: data.content.indexOf(data.fReplaceable) !== -1,
+        isReplacementInFile: data.content.indexOf(data.replacement) !== -1,
       }))
     ),
 
@@ -99,29 +130,29 @@ export const replacer_ = (
         cond([
           [
             (data: ReplacerData) =>
-              data.replaceableInFile === true &&
-              data.replacementInFile === true,
+              data.isReplaceableInFile === true &&
+              data.isReplacementInFile === true,
             (data: ReplacerData) => NI_Next.of(data),
           ],
 
           [
             (data: ReplacerData) =>
-              data.replaceableInFile === false &&
-              data.replacementInFile === true,
+              data.isReplaceableInFile === false &&
+              data.isReplacementInFile === true,
             (data: ReplacerData) => Done.of(data),
           ],
 
           [
             (data: ReplacerData) =>
-              data.replaceableInFile === true &&
-              data.replacementInFile === false,
+              data.isReplaceableInFile === true &&
+              data.isReplacementInFile === false,
             (data: ReplacerData) => NI_Next.of(data),
           ],
 
           [
             (data: ReplacerData) =>
-              data.replaceableInFile === false &&
-              data.replacementInFile === false,
+              data.isReplaceableInFile === false &&
+              data.isReplacementInFile === false,
             (data: ReplacerData) =>
               Done.of({
                 ...data,
@@ -149,7 +180,7 @@ export const replacer_ = (
     then(
       map((data: ReplacerData) => ({
         ...data,
-        newContent: data.content.replace(data.replaceable, data.replacement),
+        newContent: data.content.replace(data.fReplaceable, data.replacement),
       }))
     ),
 

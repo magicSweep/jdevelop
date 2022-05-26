@@ -40,5 +40,17 @@ exports.default = [
     replaceable: '"gatsby-plugin-webpack-bundle-analyser-v2"',
     replacement: '//"gatsby-plugin-webpack-bundle-analyser-v2"',
   },
+  {
+    pathToFile: "src/path-to-file/config.ts",
+    identifier: "TEST REPLACER | CONFIG",
+    // replace full line with given replaceable
+    // in our case it will be search something like - export const numberOfPhotosPerQuery = 9;
+    doesReplaceFullLine: true,
+    replaceable: "numberOfPhotosPerQuery",
+    replacement: `export const numberOfPhotosPerQuery = calcPhotosLimitPerQuery(
+        photoCardWidth,
+        photoCardHeight
+      );`,
+  },
 ];
 ```

@@ -1,22 +1,26 @@
-import { readFile, writeFile } from "fs/promises";
-import { existsSync } from "fs";
 import {
-  cond,
+  chain,
   compose,
-  NI_Next,
+  cond,
   Done,
   map,
+  NI_Next,
+  tap,
   then,
-  chain,
   thenDoneFold,
   _catch,
-  tap,
 } from "fmagic";
-import { join } from "path";
+import { existsSync } from "fs";
+import { readFile, writeFile } from "fs/promises";
+import {
+  checkIfNeedReplace,
+  makeFinalReplaceable,
+  makeReplacement,
+  withLoadConfig_,
+} from "./replacer.service";
+import { ReplacerConfig } from "./types";
 
-// REPLACE PARTS OF FILE
-// FOR EXAMPLE IMPORTS: from "../hello" to "../hello.fake"
-// OR CONFIG: from const hello = "dev" to const hello = "prod"
+// TODO: make config manager - load and validate
 
 type ReplacerData = ReplacerConfig & {
   content: string;
@@ -27,56 +31,23 @@ type ReplacerData = ReplacerConfig & {
   error: any;
 };
 
-export type ReplacerConfig = {
-  // file to work with
-  pathToFile: string;
-  // identify in log messages
-  identifier: string;
-  doesReplaceFullLine?: boolean;
-  replaceable: string;
-  //
-  replacement: string;
-};
-
-export const getFullLine = (searchTerm: string, content: string) => {
-  const startSymbol = "\n";
-  const lastSymbol = ";";
-
-  const searchTermIndex = content.indexOf(searchTerm);
-  let startIndex = content.lastIndexOf(startSymbol, searchTermIndex) + 1;
-  let endIndex = content.indexOf(lastSymbol, searchTermIndex) + 1;
-
-  //console.log("BOOM1-----------", data.content[endIndex].charCodeAt(0));
-
-  /* startIndex =
-    data.doesIncludeFirstSymbol === false ? startIndex + 1 : startIndex;
-  endIndex =
-    data.doesIncludeLastSymbol === true ? endIndex + 1 : endIndex; */
-
-  //console.log("BOOM2-----------", data.content[endIndex].charCodeAt(0));
-
-  const fullLine = content.substring(startIndex, endIndex);
-
-  return fullLine;
-};
-
-// numberOfPhotosPerQuery from number to calcPhotosLimitPerQuery
 export const replacer_ = (
   existsSync_: typeof existsSync,
-  readFile_: typeof readFile,
-  writeFile_: typeof writeFile
+  writeFile_: typeof writeFile,
+  readFile_: typeof readFile
 ) =>
   compose<ReplacerConfig, Promise<void>>(
-    (config: ReplacerConfig) =>
-      existsSync_(config.pathToFile) === false
-        ? Done.of(`File does not exists | ${config.pathToFile}`)
-        : NI_Next.of(config),
-    // GET CONTENT FROM FILE
+    (props: ReplacerConfig) =>
+      existsSync_(props.pathToFile) === false
+        ? Done.of(`File does not exists | ${props.pathToFile}`)
+        : NI_Next.of(props),
+
+    // get file content
     chain(
       compose(
-        async (config: ReplacerConfig) => ({
-          ...config,
-          content: await readFile_(config.pathToFile, {
+        async (data: ReplacerData) => ({
+          ...data,
+          content: await readFile_(data.pathToFile, {
             encoding: "utf-8",
           }),
         }),
@@ -89,110 +60,68 @@ export const replacer_ = (
       )
     ),
 
-    // Get full string with
-    then(
-      map((data: ReplacerData) => {
-        if (data.doesReplaceFullLine === true) {
-          data.fReplaceable = getFullLine(data.replaceable, data.content);
-        } else {
-          data.fReplaceable = data.replaceable;
-        }
+    /* async (data: ReplacerData) => {
+      return await getFileContent_(data);
+    }, */
 
-        /*   const chunkIndex = data.content.indexOf(data.strPartToIdentify);
-        let startIndex = data.content.lastIndexOf(data.strStart, chunkIndex);
-        let endIndex = data.content.indexOf(data.strEnd, chunkIndex);
-
-        //console.log("BOOM1-----------", data.content[endIndex].charCodeAt(0));
-
-        startIndex =
-          data.doesIncludeFirstSymbol === false ? startIndex + 1 : startIndex;
-        endIndex =
-          data.doesIncludeLastSymbol === true ? endIndex + 1 : endIndex;
-
-        //console.log("BOOM2-----------", data.content[endIndex].charCodeAt(0));
-
-        data.fullSearchedString = data.content.substring(startIndex, endIndex); */
-
-        return data;
-      })
-    ),
-
+    // make replaceable
     then(
       map((data: ReplacerData) => ({
         ...data,
-        isReplaceableInFile: data.content.indexOf(data.fReplaceable) !== -1,
-        isReplacementInFile: data.content.indexOf(data.replacement) !== -1,
+        fReplaceable: makeFinalReplaceable(
+          data.type,
+          data.replaceable,
+          data.content,
+          data.isFake === true
+        ),
+        replacement: makeReplacement(
+          data.replaceable,
+          data.replacement as string,
+          data.type,
+          data.isFake === true
+        ),
       }))
     ),
+    // check if need replace
+    then(chain(checkIfNeedReplace)),
 
-    then(
-      chain(
-        cond([
-          [
-            (data: ReplacerData) =>
-              data.isReplaceableInFile === true &&
-              data.isReplacementInFile === true,
-            (data: ReplacerData) => NI_Next.of(data),
-          ],
-
-          [
-            (data: ReplacerData) =>
-              data.isReplaceableInFile === false &&
-              data.isReplacementInFile === true,
-            (data: ReplacerData) => Done.of(data),
-          ],
-
-          [
-            (data: ReplacerData) =>
-              data.isReplaceableInFile === true &&
-              data.isReplacementInFile === false,
-            (data: ReplacerData) => NI_Next.of(data),
-          ],
-
-          [
-            (data: ReplacerData) =>
-              data.isReplaceableInFile === false &&
-              data.isReplacementInFile === false,
-            (data: ReplacerData) =>
-              Done.of({
-                ...data,
-                error: `We got no replacable content | "${data.replaceable}" | in file.`,
-              }),
-          ],
-        ])
+    /*   then(
+      map(
+        tap((data: any) => {
+          console.log("-----STAGE 0", data);
+        })
       )
-    ),
-
-    // Analyze if need to do anything
-    /* then(
-      chain((data: ReplacerData) => {
-        const isNeedChanges =
-          data.fullSearchedString.replace(/\s+/g, "") !==
-          data.variants[data.neededVariantIndex].replace(/\s+/g, "");
-
-        return isNeedChanges === true
-          ? NI_Next.of(data)
-          : Done.of("No need to change...");
-      })
     ), */
 
-    // Replace string
+    // make replace
     then(
       map((data: ReplacerData) => ({
         ...data,
-        newContent: data.content.replace(data.fReplaceable, data.replacement),
+        newContent: data.content.replace(
+          data.fReplaceable,
+          data.replacement as string
+        ),
       }))
     ),
 
+    /* then(
+      map(
+        tap((data: any) => {
+          console.log("-----STAGE 1", data);
+        })
+      )
+    ),
+ */
+    // write file content
     then(
       chain(
-        compose(
-          async (data: ReplacerData) => {
-            await writeFile_(data.pathToFile, data.newContent, {
+        compose<ReplacerData, Promise<NI_Next<ReplacerData> | Done>>(
+          async (props: ReplacerData) => {
+            await writeFile_(props.pathToFile, props.newContent, {
               encoding: "utf-8",
             });
 
-            return data;
+            return props;
           },
           then(NI_Next.of),
           _catch((err: any) =>
@@ -204,6 +133,14 @@ export const replacer_ = (
       )
     ),
 
+    /*  then(
+      map(
+        tap((data: any) => {
+          console.log("-----STAGE 2", data);
+        })
+      )
+    ), */
+
     thenDoneFold(
       (data: ReplacerData) => {
         if (data.error !== undefined) {
@@ -213,65 +150,12 @@ export const replacer_ = (
         console.log(`----${data.identifier} - INFO`, "NO NEED TO DO ANYTHING");
       },
       (data: ReplacerData) => {
+        //console.log("-------------------------------------", data);
         console.log(`----${data.identifier} - SUCCESS`);
       }
     )
   );
 
-export const replacer = replacer_(existsSync, readFile, writeFile);
-
-export const withLoadConfig_ = (
-  existsSync_: (path: string) => boolean,
-  replacer: (cnf: any) => Promise<any>
-) =>
-  compose<string, void>(
-    (pathToConfig: string) => ({
-      pathToConfig,
-      cnfExists: existsSync_(pathToConfig),
-    }),
-    (data: any) =>
-      data.cnfExists === false
-        ? Done.of({
-            ...data,
-            error: `---No config file for --replacer-- on path - ${data.pathToConfig}`,
-          })
-        : NI_Next.of(data),
-    chain(
-      compose(
-        // require(pathToConfig)
-        async (data: any) => {
-          const module = await import(data.pathToConfig);
-
-          return {
-            ...data,
-            arrOfCnf: module.default.default,
-          };
-        } /* ({
-          ...data,
-          arrOfCnf: (await import(data.pathToConfig)).default,
-        }), */,
-        then(NI_Next.of),
-        _catch((err: any) => Done.of({ error: err }))
-      )
-    ),
-    //then(tap(chain((data: any) => console.log("====TAP", data.arrOfCnf)))),
-    then(
-      chain((data: any) =>
-        Array.isArray(data.arrOfCnf) === false
-          ? Done.of({
-              error: "Configuration must be array of configs",
-            })
-          : NI_Next.of(data)
-      )
-    ),
-    thenDoneFold(
-      (data: any) => {
-        console.error("ERROR ON REPLACER", data.error);
-      },
-      (data: any) => {
-        data.arrOfCnf.map(replacer);
-      }
-    )
-  );
+export const replacer = replacer_(existsSync, writeFile, readFile);
 
 export const withLoadConfig = withLoadConfig_(existsSync, replacer);

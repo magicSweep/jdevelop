@@ -1,16 +1,12 @@
-import { writeFile } from "fs/promises";
-import { ReplacerConfig, replacer_, withLoadConfig_, getFullLine } from ".";
+import { replacer_ } from ".";
+import { ReplacerConfig } from "./types";
 
-const configContent = `
+const fileContent = `
 import { FirestoreFieldsToEdit, EditPhotoWorkerProps } from "./../types";
-import { add, edit } from "../api/worker.fake";
+import { add, edit } from "../api/worker/index.fake";
 import { WorkerRequest } from "lizzygram-common-data/dist/types";
 
 export const addPhotoFormTitle = "Добавить новое фото";
-export const editPhotoFormTitle = "Изменить фото";
-export const searchPhotoFormTitle = "Поиск фото";
-
-/* OTHER */
 
 //export const lizzyYearsOld = getLizzyYearsOld();
 
@@ -27,90 +23,102 @@ export const numberOfPhotosPerQuery = 9;
 plugins: [
   "gatsby-plugin-postcss",
   "gatsby-plugin-react-helmet",
-  {
-    resolve: "gatsby-plugin-manifest",
-    options: {
-      name: "Photo album, portfolio",
-      short_name: "Photo album",
-      start_url: "/",
-      lang: "ru",
-      background_color: "#f7f0eb",
-      theme_color: "#a2466c",
-      display: "standalone",
-      icon: "src/icons/favicon_color_512x512.png",
-      theme_color_in_head: false,
-    },
-  },
   "gatsby-plugin-webpack-bundle-analyser-v2",
 ],
 `;
 
-describe("getFullLine", () => {
-  test("", () => {
-    const res = getFullLine("lizzyBirthday", configContent);
+const writeFile = jest.fn();
+const existsSync = jest.fn();
+const readFile = jest.fn();
 
-    expect(res.includes("2018-07-08")).toEqual(true);
-    /* expect(res.includes("photoCardWidth")).toEqual(
-      "export const numberOfPhotosPerQuery = calcPhotosLimitPerQuery(  photoCardWidth,  photoCardHeight);"
-    ); */
-  });
-});
+console.log = jest.fn();
 
 describe("replacer_", () => {
-  const existsSync = jest.fn(() => true);
-  const readFile = jest.fn(() => Promise.resolve(configContent));
-  const writeFile = jest.fn(() => Promise.resolve());
-
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  const config = {
-    pathToFile: "/src/path-to-file.ts",
+  //const getFileContent = getFileContent_(existsSync, readFile);
+  //const writeFileContent = writeFileContent_(writeFile);
+
+  const replacer = replacer_(existsSync, writeFile, readFile);
+
+  const config: ReplacerConfig = {
+    pathToFile: "/path/file.js",
     // identify in log messages
-    identifier: "TEST REPLACER",
-    replaceable: "api/worker.fake",
-    replacement: "api/worker",
+    identifier: "SUPER REPLACER",
+    //doesReplaceFullLine?: boolean;
+    type: "SIMPLE",
+
+    isFake: false,
+
+    replaceable: "",
+    //
+    //replacement: "",
   };
 
-  const replacer = replacer_(existsSync, readFile as any, writeFile as any);
+  test("On type SIMPLE we just replace replaceable with replacement", async () => {
+    readFile.mockResolvedValueOnce(fileContent);
+    writeFile.mockResolvedValueOnce(true);
+    existsSync.mockReturnValueOnce(true);
 
-  test("", async () => {
-    await replacer({ ...config });
-
-    expect(existsSync).toHaveBeenCalledTimes(1);
-    expect(readFile).toHaveBeenCalledTimes(1);
-    expect(writeFile).toHaveBeenCalledTimes(1);
-    //expect(writeFile).toHaveBeenNthCalledWith(1, "hello");
-  });
-
-  test("", async () => {
     await replacer({
       ...config,
-      replaceable: '"gatsby-plugin-webpack-bundle-analyser-v2"',
-      replacement: '//"gatsby-plugin-webpack-bundle-analyser-v2"',
+      replaceable: "Добавить новое фото",
+      replacement: "Добавить новое лото",
     });
 
-    expect(existsSync).toHaveBeenCalledTimes(1);
-    expect(readFile).toHaveBeenCalledTimes(1);
     expect(writeFile).toHaveBeenCalledTimes(1);
-    //expect(writeFile).toHaveBeenNthCalledWith(1, "hello");
+    //expect(writeFile).toHaveBeenNthCalledWith(1, 'he');
+
+    expect(console.log).toHaveBeenCalledTimes(1);
+    expect(console.log).toHaveBeenNthCalledWith(
+      1,
+      "----SUPER REPLACER - SUCCESS"
+    );
   });
 
-  test("", async () => {
+  test("On type FULL_LINE we first search full line that contains replaceable and then replace it with replacement", async () => {
+    readFile.mockResolvedValueOnce(fileContent);
+    writeFile.mockResolvedValueOnce(true);
+    existsSync.mockReturnValueOnce(true);
+
     await replacer({
       ...config,
-      doesReplaceFullLine: true,
+      type: "FULL_LINE",
       replaceable: "numberOfPhotosPerQuery",
-      replacement: `export const numberOfPhotosPerQuery = calcPhotosLimitPerQuery(
-        photoCardWidth,
-        photoCardHeight
-      );`,
+      replacement: "export const numberOfPhotosPerQuery = calc(23, 45);",
     });
 
-    expect(existsSync).toHaveBeenCalledTimes(1);
-    expect(readFile).toHaveBeenCalledTimes(1);
     expect(writeFile).toHaveBeenCalledTimes(1);
-    //expect(writeFile).toHaveBeenNthCalledWith(1, "hello");
+    //expect(writeFile).toHaveBeenNthCalledWith(1, "he");
+
+    expect(console.log).toHaveBeenCalledTimes(1);
+    expect(console.log).toHaveBeenNthCalledWith(
+      1,
+      "----SUPER REPLACER - SUCCESS"
+    );
+  });
+
+  test("On type FAKE_API - we first create replecement by isFake flag and then replace it with replacement", async () => {
+    readFile.mockResolvedValueOnce(fileContent);
+    writeFile.mockResolvedValueOnce(true);
+    existsSync.mockReturnValueOnce(true);
+
+    await replacer({
+      ...config,
+      type: "FAKE_API",
+      isFake: false,
+      replaceable: "api/worker",
+    });
+
+    expect(writeFile).toHaveBeenCalledTimes(1);
+    //expect(writeFile).toHaveBeenNthCalledWith(1, "he");
+
+    expect(console.log).toHaveBeenCalledTimes(1);
+    expect(console.log).toHaveBeenNthCalledWith(
+      1,
+      "----SUPER REPLACER - SUCCESS"
+    );
   });
 });

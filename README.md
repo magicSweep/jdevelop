@@ -4,7 +4,7 @@
 
 - $ npm run jdevelop --cmd=create-react-func --name=FuncName --path=component - path - related to src dir. --path=component means rootDir/src/component/FuncName
 
-- $ npm run jdevelop -cmd replacer -cnfDir src/config/replacer -cnf fake-imports/config.js -cnf other/index.js - cnf - path to config file - related to root dir.
+- $ npm run jdevelop --cmd replacer --cnfDir src/config/replacer --cnf fake-imports/config.js --cnf other/index.js - cnf - path to config file - related to root dir.
 
 ```javascript
 // package.json example
@@ -12,7 +12,7 @@
 {
   "scripts": {
     // all paths start from root directory
-    "fake-imports": "jdevelop -cmd replacer -cnfDir src/config/replacer -cnf fake-imports/config.js -cnf other/index.js",
+    "fake-imports": "jdevelop --cmd replacer --cnfDir src/config/replacer --cnf fake-imports/config.js --cnf other/index.js",
   },
 }
 ```

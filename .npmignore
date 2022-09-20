@@ -3,6 +3,8 @@ node_modules
 
 src/
 
+replacer-example/
+
 .gitignore
 .np-config.js
 

@@ -1,5 +1,6 @@
-import { replacer_ } from ".";
-import { ReplacerConfig } from "./types";
+import { replaceOne, replaceMany__, withFileOperations_ } from ".";
+import wait from "waait";
+import { ReplacerConfig, ReplacerOptions } from "./types";
 
 const fileContent = `
 import { FirestoreFieldsToEdit, EditPhotoWorkerProps } from "./../types";
@@ -27,13 +28,31 @@ plugins: [
 ],
 `;
 
-const writeFile = jest.fn();
-const existsSync = jest.fn();
-const readFile = jest.fn();
+//console.log = jest.fn();
 
-console.log = jest.fn();
+/* test.only("", async () => {
+  const double = async (s: any) => {
+    await wait(s === 1 ? 2000 : 500);
+    return `${s} * 2`;
+  };
 
-describe("replacer_", () => {
+  const func = async () => {
+    let res = "";
+
+    for (let i of [1, 2, 3]) {
+      let r = await double(i);
+      res += r;
+    }
+
+    return res;
+  };
+
+  const res = await func();
+
+  expect(res).toEqual("h");
+}); */
+
+describe("replaceOne", () => {
   afterEach(() => {
     jest.clearAllMocks();
   });
@@ -41,10 +60,10 @@ describe("replacer_", () => {
   //const getFileContent = getFileContent_(existsSync, readFile);
   //const writeFileContent = writeFileContent_(writeFile);
 
-  const replacer = replacer_(existsSync, writeFile, readFile);
+  //const replacer = replacer_(existsSync, writeFile, readFile);
 
-  const config: ReplacerConfig = {
-    pathToFile: "/path/file.js",
+  const config: ReplacerOptions = {
+    //pathToFile: "/path/file.js",
     // identify in log messages
     identifier: "SUPER REPLACER",
     //doesReplaceFullLine?: boolean;
@@ -58,67 +77,146 @@ describe("replacer_", () => {
   };
 
   test("On type SIMPLE we just replace replaceable with replacement", async () => {
-    readFile.mockResolvedValueOnce(fileContent);
-    writeFile.mockResolvedValueOnce(true);
-    existsSync.mockReturnValueOnce(true);
-
-    await replacer({
-      ...config,
-      replaceable: "Добавить новое фото",
-      replacement: "Добавить новое лото",
+    const res = await replaceOne({
+      options: {
+        ...config,
+        replaceable: "Добавить новое фото",
+        replacement: "Добавить новое лото",
+      },
+      content: fileContent,
     });
 
-    expect(writeFile).toHaveBeenCalledTimes(1);
-    //expect(writeFile).toHaveBeenNthCalledWith(1, 'he');
+    //expect(res.content).toEqual("h");
 
-    expect(console.log).toHaveBeenCalledTimes(1);
-    expect(console.log).toHaveBeenNthCalledWith(
-      1,
-      "----SUPER REPLACER - SUCCESS"
-    );
+    expect(res.info).toEqual("----SUPER REPLACER - SUCCESS");
   });
 
   test("On type FULL_LINE we first search full line that contains replaceable and then replace it with replacement", async () => {
-    readFile.mockResolvedValueOnce(fileContent);
-    writeFile.mockResolvedValueOnce(true);
-    existsSync.mockReturnValueOnce(true);
+    const res = await replaceOne({
+      options: {
+        ...config,
+        type: "FULL_LINE",
+        replaceable: "numberOfPhotosPerQuery",
+        replacement: "export const numberOfPhotosPerQuery = calc(23, 45);",
+      },
 
-    await replacer({
-      ...config,
-      type: "FULL_LINE",
-      replaceable: "numberOfPhotosPerQuery",
-      replacement: "export const numberOfPhotosPerQuery = calc(23, 45);",
+      content: fileContent,
     });
 
-    expect(writeFile).toHaveBeenCalledTimes(1);
-    //expect(writeFile).toHaveBeenNthCalledWith(1, "he");
+    //expect(res).toEqual("h");
 
-    expect(console.log).toHaveBeenCalledTimes(1);
-    expect(console.log).toHaveBeenNthCalledWith(
-      1,
-      "----SUPER REPLACER - SUCCESS"
-    );
+    expect(res.info).toEqual("----SUPER REPLACER - SUCCESS");
   });
 
   test("On type FAKE_API - we first create replecement by isFake flag and then replace it with replacement", async () => {
-    readFile.mockResolvedValueOnce(fileContent);
-    writeFile.mockResolvedValueOnce(true);
-    existsSync.mockReturnValueOnce(true);
-
-    await replacer({
-      ...config,
-      type: "FAKE_API",
-      isFake: false,
-      replaceable: "api/worker",
+    const res = await replaceOne({
+      options: {
+        ...config,
+        type: "FAKE_API",
+        isFake: false,
+        replaceable: "/worker",
+      },
+      content: fileContent,
     });
 
-    expect(writeFile).toHaveBeenCalledTimes(1);
-    //expect(writeFile).toHaveBeenNthCalledWith(1, "he");
+    //expect(res).toEqual("h");
 
-    expect(console.log).toHaveBeenCalledTimes(1);
-    expect(console.log).toHaveBeenNthCalledWith(
-      1,
-      "----SUPER REPLACER - SUCCESS"
+    expect(res.info).toEqual("----SUPER REPLACER - SUCCESS");
+  });
+});
+
+describe("replaceMany_", () => {
+  const replaceOne = jest.fn(() => {
+    const n = Math.round(Math.random() * 1000);
+
+    return Promise.resolve({
+      content: `Some content #${n}`,
+      info: `Some info #${n}`,
+    });
+  });
+
+  const config = {
+    pathToFile: "src/console/replacer/example/for-replace/one.js",
+    // identify in log messages
+    options: [
+      {
+        identifier: "REPLACER | AUTH MIDDLEWARE",
+        replaceable: '"../api/Broker"',
+      },
+      {
+        identifier: "REPLACER | CHECK ROLE MIDDLEWARE",
+        replaceable: '"../api/Joker"',
+      },
+      {
+        identifier: "REPLACER | 1 CLEAN UP CONTROLLER",
+        replaceable: '"../api/worker"',
+      },
+    ],
+  };
+
+  const replaceMany = replaceMany__(replaceOne);
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test("It get content and send throw all options, collect info messages", async () => {
+    const res = await replaceMany({
+      ...config,
+      content: "Super content",
+    } as any);
+
+    expect(replaceOne).toHaveBeenCalledTimes(3);
+
+    expect(res).toEqual("h");
+  });
+});
+
+describe.only("withFileOperations_", () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const cnfs = [
+    {
+      pathToFile: "src/console/replacer/example/one.js",
+      // identify in log messages
+      options: "options",
+    },
+    {
+      pathToFile: "src/console/replacer/example/for-replace/two.js",
+      // identify in log messages
+      options: "options",
+    },
+    {
+      pathToFile: "src/console/replacer/example/for-replace/three.js",
+      // identify in log messages
+      options: "options",
+    },
+  ];
+
+  const replaceMany = jest.fn().mockResolvedValue({
+    newContent: "New super content",
+    infos: ["one info", "two info", "three info"],
+  });
+  const existsSync = jest.fn().mockReturnValue(true);
+  const readFile = jest.fn().mockResolvedValue("Super content opp...");
+  const writeFile = jest.fn().mockResolvedValue(null);
+
+  test("", async () => {
+    const withFileOperations = withFileOperations_(
+      replaceMany,
+      existsSync,
+      readFile,
+      writeFile
     );
+
+    await withFileOperations(cnfs as any);
+
+    expect(existsSync).toHaveBeenCalledTimes(3);
+    expect(readFile).toHaveBeenCalledTimes(3);
+    expect(writeFile).toHaveBeenCalledTimes(3);
+
+    expect(replaceMany).toHaveBeenCalledTimes(3);
   });
 });

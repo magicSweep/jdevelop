@@ -1,8 +1,15 @@
-import { makeFinalReplaceable, getFullLine } from "./replacer.service";
+import {
+  makeFinalReplaceable,
+  getFullLine,
+  prepareCnfPaths,
+  makeConfigs,
+  checkIfNeedReplace,
+} from "./replacer.service";
 
 const fileContent = `
 import { FirestoreFieldsToEdit, EditPhotoWorkerProps } from "./../types";
-import { add, edit } from "../api/worker/index.fake";
+import { add } from "../api/worker/index.fake";
+import {  edit } from "../api/stoker";
 import { WorkerRequest } from "lizzygram-common-data/dist/types";
 
 export const addPhotoFormTitle = "Добавить новое фото";
@@ -14,7 +21,10 @@ export const lizzyBirthday = new Date("2018-07-08");
 // WALL OF PHOTOS | USE OBSERVABLE PHOTOS
 
 // NUMBER OF PHOTOS PER QUERY
-export const numberOfPhotosPerQuery = 9;
+export const numberOfPhotosPerQuery = calcPhotosLimitPerQuery(
+  photoCardWidth,
+  photoCardHeight
+);
 
 //export const rootDivId = "wall_of_photos";
 //export const idPrefix = "#OBSERVER_";
@@ -26,18 +36,126 @@ plugins: [
 ],
 `;
 
+/* describe.only("Some test", () => {
+  const toUpper = async (str: string) => str.toUpperCase();
+
+  test("", async () => {
+    const res = await [{ opt: "opt1" }, { opt: "opt2" }].reduce(
+      async (prev, curr, i, arr) => {
+        const res = await prev;
+
+        return toUpper(res + curr.opt);
+      },
+      Promise.resolve("")
+    );
+
+    expect(res).toEqual("h");
+  });
+}); */
+
+describe("makeConfigs", () => {
+  const cnfs = ["./example/config/real-imports", "./example/config/other"];
+
+  test.skip("", () => {
+    const res = makeConfigs(cnfs);
+
+    expect(res).toEqual("h");
+  });
+});
+
+describe.only("prepareCnfPaths", () => {
+  test("", () => {
+    const cnfPaths = ["fake-imports/index.js", "other/index.js"];
+    const pathToDir = "src/config/replacer";
+    const res = prepareCnfPaths(cnfPaths, pathToDir);
+
+    expect(res).toEqual([
+      "src/config/replacer/fake-imports/index.js",
+      "src/config/replacer/other/index.js",
+    ]);
+  });
+
+  test("", () => {
+    const cnfPaths = "fake-imports/index.js";
+    const pathToDir = "src/config/replacer";
+    let res = prepareCnfPaths(cnfPaths, pathToDir);
+
+    expect(res).toEqual(["src/config/replacer/fake-imports/index.js"]);
+
+    res = prepareCnfPaths(cnfPaths);
+
+    expect(res).toEqual(["fake-imports/index.js"]);
+  });
+});
+
 describe("getFullLine", () => {
   test.each([
+    //numberOfPhotosPerQuery
     {
       count: 0,
-      replaceable: '"gatsby-plugin-react-helmet"',
+      replaceable: "numberOfPhotosPerQuery",
       fileContent,
-      expected: '"gatsby-plugin-react-helmet",',
+      expected: `export const numberOfPhotosPerQuery = calcPhotosLimitPerQuery(
+  photoCardWidth,
+  photoCardHeight
+);`,
     },
   ])("$count", ({ replaceable, fileContent, expected }: any) => {
     const res = getFullLine(replaceable, fileContent);
 
     expect(res.trim()).toEqual(expected);
+  });
+});
+
+// checkIfNeedReplace
+describe("checkIfNeedReplace", () => {
+  test.each([
+    {
+      count: 0,
+      replaceable: "../api/worker/index.fake",
+      replacement: "../api/worker",
+      expected: true,
+    },
+    {
+      count: 1,
+      replaceable: "../api/worker",
+      replacement: "../api/worker/index.fake",
+      expected: "No need to do anything...",
+    },
+    {
+      count: 2,
+      replaceable: "../api/stoker",
+      replacement: "../api/stoker/index.fake.ts",
+      expected: true,
+    },
+    {
+      count: 3,
+      replaceable: "../api/stoker/index.fake.ts",
+      replacement: "../api/stoker",
+      expected: "No need to do anything...",
+    },
+    {
+      count: 4,
+      replaceable: "../sto/index.fake.ts",
+      replacement: "../sto",
+      expected:
+        'We got no replacable content | "../sto/index.fake.ts" | in file.',
+    },
+    //../api/worker/index.fake"
+    {
+      count: 5,
+      replaceable: "../api/worker/index.fake",
+      replacement: "../api/worker/index.fake",
+      expected: "No need to do anything...",
+    },
+  ])("$count", ({ replaceable, replacement, expected }: any) => {
+    const res = checkIfNeedReplace({
+      content: fileContent,
+      replaceable,
+      replacement,
+    });
+
+    expect(res).toEqual(expected);
   });
 });
 

@@ -4,7 +4,7 @@
 
 - $ npm run jdevelop --cmd=create-react-func --name=FuncName --path=component - path - related to src dir. --path=component means rootDir/src/component/FuncName
 
-- $ npm run jdevelop --cmd=replacer --config=config/replacer.config.js - config - path to config file - related to root dir rootDir/config/replacer.config.js
+- $ npm run jdevelop -cmd replacer -cnfDir src/config/replacer -cnf fake-imports/config.js -cnf other/index.js - cnf - path to config file - related to root dir.
 
 ```javascript
 // package.json example
@@ -19,7 +19,6 @@
 
 ```javascript
 // replacer.config.js example
-
 exports.default = [
   {
     pathToFile: "src/path-to-file/file2.ts",

@@ -2,6 +2,8 @@
 
 ## CLI
 
+- $ npm run jdevelop --cmd=create-service --name=ServiceName --path=service - path - related to src dir. --path=service means rootDir/src/service/ServiceName
+
 - $ npm run jdevelop --cmd=create-react-func --name=FuncName --path=component - path - related to src dir. --path=component means rootDir/src/component/FuncName
 
 - $ npm run jdevelop --cmd replacer --cnfDir src/config/replacer --cnf fake-imports/config.js --cnf other/index.js - cnf - path to config file - related to root dir.

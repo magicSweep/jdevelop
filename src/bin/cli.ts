@@ -2,6 +2,7 @@
 //import parse from "minimist";
 import { join } from "path";
 import createReactFunc from "./../console/createReactFunc";
+import { createService } from "./../console/createService";
 import { withFileOperations } from "./../console/replacer";
 import {
   makeConfigs,
@@ -11,7 +12,7 @@ import yargs from "yargs/yargs";
 import { hideBin } from "yargs/helpers";
 
 type Arguments = {
-  cmd: "replacer" | "create-react-func";
+  cmd: "replacer" | "create-react-func" | "create-service";
   // Create-react-func args
   // function name
   name: string;
@@ -43,6 +44,13 @@ const main = () => {
       const configs = makeConfigs(paths);
 
       withFileOperations(configs);
+      break;
+
+    case "create-service":
+      createService({
+        name: argv.name,
+        cnfPath: join(process.cwd(), "src", argv.path),
+      });
       break;
 
     default:
